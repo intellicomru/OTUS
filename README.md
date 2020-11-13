@@ -1,2 +1,2 @@
-# OTUS
+# OTUS PostgreSQL 2020-2021 
  
