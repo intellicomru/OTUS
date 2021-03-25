@@ -1,0 +1,174 @@
+### Курсовой проект ### 
+Данный проект ориентирован на использование технологий изученных на курсе PostgreSQL OTUS  
+Установка и настройка PostgreSQL  
+Установка и использование PostgreSQL и Kubernetes  
+Работа с большим объемом реальных данных  
+Виды индексов. Работа с индексами и оптимизация запросов  
+Различные виды join'ов. Применение и оптимизация  
+Секционирование  
+Полнотекстовый индекс.  
+
+
+# 1. Обновим Debian
+apt-get -y update
+apt-get -y upgrade
+
+
+apt-get -y install nginx 
+systemctl start nginx 
+systemctl enable nginx 
+
+apt-get -y install apache2 
+sed -i "s/Listen 80/Listen 127.0.0.1:8080/" /etc/apache2/ports.conf
+
+# Apache2 Real IP
+vi /etc/apache2/mods-available/remoteip.conf
+<IfModule remoteip_module>
+  RemoteIPHeader X-Forwarded-For
+  RemoteIPTrustedProxy 127.0.0.1/8
+</IfModule>
+
+#Активируем модуль:
+
+a2enmod remoteip
+
+## cgi 
+
+vi /etc/apache2/sites-available/000-default.conf
+
+```
+ <VirtualHost *:8080>
+ServerName myhost
+
+ServerAdmin webmaster@localhost
+DocumentRoot /var/www/html
+
+ErrorLog ${APACHE_LOG_DIR}/error.log
+CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+ScriptAlias /cgi-bin/ /var/www/cgi-bin/
+<Directory «/var/www/cgi-bin/»>
+     AllowOverride None
+     Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
+     Require all granted
+</Directory>
+
+</VirtualHost>
+```
+a2enmod cgi
+mkdir -p /var/www/cgi-bin/
+systemctl restart apache2
+
+# config nginx 
+systemctl restart nginx
+
+### поставили гит 
+
+cd  /var/www/  
+apt-get install git  
+git init  
+git remote add origin https://github.com/intellicomru/project-otus.git  
+git pull origin master   
+
+### ставим постгрю и модули Perl 
+
+sudo apt-get -y install postgresql 
+ pg_lsclusters
+ 
+ ```
+Ver Cluster Port Status Owner    Data directory              Log file
+11  main    5432 online postgres /var/lib/postgresql/11/main /var/log/postgresql/postgresql-11-main.log
+```
+sudo -u postgres psql
+CREATE ROLE otus LOGIN PASSWORD '1234567890';
+CREATE DATABASE otus;
+ ALTER DATABASE otus OWNER TO otus;
+ \q
+ 
+ --После этого нужно добавить для этого пользователя строчку в файл 
+ /etc/postgresql/11/main/pg_hba.conf 
+ local   all             otus                             md5
+ 
+sudo systemctl stop postgresql@11-main    
+sudo systemctl start postgresql@11-main 
+
+
+
+# perl вспомогательные модули. просто для удобства  
+
+```
+sudo -s 
+apt-get install build-essential
+cpan 
+install CGI 
+install lib::abs
+install uni::perl
+install DBI
+install YAML::XS
+install Spreadsheet::Read
+install LWP::UserAgent
+install JSON
+
+```
+## драйвера для связи перла и базы 
+sudo apt-get install libpq-dev
+apt-get install libdbd-pg-perl
+
+
+создаем таблици
+psql -U otus -d otus
+create schema muzik;
+
+create table muzik.file_data(
+	id bigserial NOT NULL,
+performers varchar ,
+name_orig varchar,
+album_name varchar,
+author_music varchar, 
+author_text varchar,
+publisher varchar,
+duration varchar,
+public_year varchar,
+genre varchar,
+filename varchar,
+link varchar,
+size int default 0,
+md5 varchar,
+isrc varchar,
+icpn varchar,
+CONSTRAINT catalog_pkey PRIMARY KEY (id)
+);
+
+заполняем данными : 
+
+cat /home/alex/mp3_data_all.csv | psql -h 127.0.0.1 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'  quote '\"' escape '\"' CSV" 
+
+ psql -h db01.hgp01.ctb.d-net.pro -p 6432 -d content_hg -U hg -t -A -F"###" -c "select  md.performers ,
+ md.name_orig ,
+ md.album_name ,
+ md.author_music ,
+ md.author_text ,
+ md.publisher,
+ md.duration ,
+ md.public_year ,
+ md.genre ,
+ mf.filename ,
+ mf.link ,
+ mf."size",
+ mf.md5,
+ md.isrc,
+ md.icpn 
+ 
+ from hgcontent.mp3_vc_meta mvm left join hgcontent.mp3_files mf on mf.mp3_id =mvm.mp3_id left join hgcontent.meta_data md on md.id=mvm.meta_id limit 10" > /mnt/tmp_hdd/mp3/mp3_data_all.csv
+ 
+ # подключаемся к кластеру через промежуточную машину пока 
+psql -h 10.154.0.6  -U postgres
+
+CREATE ROLE otus LOGIN PASSWORD '1234567890';
+CREATE DATABASE otus;
+ ALTER DATABASE otus OWNER TO otus;
+ \q
+
+добавляем в кластер доступ для otus на управляющей машине 
+ kubectl exec -it $(kubectl get pods -l app.kubernetes.io/component=pgpool,app.kubernetes.io/name=postgresql-ha -o jsonpath='{.items[0].metadata.name}') -- pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "otus" "1234567890"
+
