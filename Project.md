@@ -100,7 +100,8 @@ sudo systemctl start postgresql@11-main
 
 
 
-# perl вспомогательные модули. просто для удобства  
+ **perl вспомогательные модули. просто для удобства**  
+   
 
 ```
 sudo -s 
@@ -116,12 +117,13 @@ install LWP::UserAgent
 install JSON
 
 ```
-## драйвера для связи перла и базы 
+#### драйвера для связи перла и базы #### 
 sudo apt-get install libpq-dev
 apt-get install libdbd-pg-perl
 
 
-создаем таблици
+создаем таблицы
+```
 psql -U otus -d otus
 create schema muzik;
 
@@ -144,30 +146,14 @@ isrc varchar,
 icpn varchar,
 CONSTRAINT catalog_pkey PRIMARY KEY (id)
 );
-
+```
 заполняем данными : 
 
+```
 cat /home/alex/mp3_data_all.csv | psql -h 127.0.0.1 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'  quote '\"' escape '\"' CSV" 
 
- psql -h db01.hgp01.ctb.d-net.pro -p 6432 -d content_hg -U hg -t -A -F"###" -c "select  md.performers ,
- md.name_orig ,
- md.album_name ,
- md.author_music ,
- md.author_text ,
- md.publisher,
- md.duration ,
- md.public_year ,
- md.genre ,
- mf.filename ,
- mf.link ,
- mf."size",
- mf.md5,
- md.isrc,
- md.icpn 
  
- from hgcontent.mp3_vc_meta mvm left join hgcontent.mp3_files mf on mf.mp3_id =mvm.mp3_id left join hgcontent.meta_data md on md.id=mvm.meta_id limit 10" > /mnt/tmp_hdd/mp3/mp3_data_all.csv
- 
- # подключаемся к кластеру через промежуточную машину пока 
+#### подключаемся к кластеру через промежуточную машину пока  ####
 psql -h 10.154.0.6  -U postgres
 
 CREATE ROLE otus LOGIN PASSWORD '1234567890';
