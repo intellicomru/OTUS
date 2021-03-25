@@ -164,3 +164,6 @@ CREATE DATABASE otus;
 добавляем в кластер доступ для otus на управляющей машине 
  kubectl exec -it $(kubectl get pods -l app.kubernetes.io/component=pgpool,app.kubernetes.io/name=postgresql-ha -o jsonpath='{.items[0].metadata.name}') -- pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "otus" "1234567890"
 
+заливаем данные в кластер 
+
+cat /home/alex/mp3_data_all.csv | psql -h 10.154.0.6 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'  quote '\"' escape '\"' CSV" 
