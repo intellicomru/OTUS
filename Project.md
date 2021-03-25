@@ -9,32 +9,35 @@
 Полнотекстовый индекс.  
 
 
-# 1. Обновим Debian
-apt-get -y update
-apt-get -y upgrade
+ 1. Обновим Debian  
+apt-get -y update  
+apt-get -y upgrade  
 
 
-apt-get -y install nginx 
-systemctl start nginx 
-systemctl enable nginx 
+apt-get -y install nginx   
+systemctl start nginx   
+systemctl enable nginx   
 
-apt-get -y install apache2 
-sed -i "s/Listen 80/Listen 127.0.0.1:8080/" /etc/apache2/ports.conf
+apt-get -y install apache2   
+sed -i "s/Listen 80/Listen 127.0.0.1:8080/" /etc/apache2/ports.conf  
 
-# Apache2 Real IP
-vi /etc/apache2/mods-available/remoteip.conf
+ Apache2 Real IP  
+ ```
+vi /etc/apache2/mods-available/remoteip.conf  
 <IfModule remoteip_module>
   RemoteIPHeader X-Forwarded-For
   RemoteIPTrustedProxy 127.0.0.1/8
 </IfModule>
+```
 
-#Активируем модуль:
+Активируем модуль:  
 
-a2enmod remoteip
+a2enmod remoteip  
 
-## cgi 
+cgi   
 
-vi /etc/apache2/sites-available/000-default.conf
+vi /etc/apache2/sites-available/000-default.conf  
+
 
 ```
  <VirtualHost *:8080>
@@ -55,42 +58,45 @@ ScriptAlias /cgi-bin/ /var/www/cgi-bin/
 
 </VirtualHost>
 ```
-a2enmod cgi
-mkdir -p /var/www/cgi-bin/
-systemctl restart apache2
 
-# config nginx 
-systemctl restart nginx
+a2enmod cgi  
+mkdir -p /var/www/cgi-bin/  
+systemctl restart apache2    
 
-### поставили гит 
+  конфигурим  nginx   
 
-cd  /var/www/  
-apt-get install git  
-git init  
-git remote add origin https://github.com/intellicomru/project-otus.git  
-git pull origin master   
+systemctl restart nginx   
 
-### ставим постгрю и модули Perl 
+ поставили гит   
 
-sudo apt-get -y install postgresql 
- pg_lsclusters
+cd  /var/www/    
+apt-get install git   
+git init   
+git remote add origin https://github.com/intellicomru/project-otus.git   
+git pull origin master    
+
+###### ставим постгрю и модули Perl   ######  
+
+sudo apt-get -y install postgresql    
+ pg_lsclusters  
  
  ```
 Ver Cluster Port Status Owner    Data directory              Log file
 11  main    5432 online postgres /var/lib/postgresql/11/main /var/log/postgresql/postgresql-11-main.log
 ```
-sudo -u postgres psql
-CREATE ROLE otus LOGIN PASSWORD '1234567890';
-CREATE DATABASE otus;
- ALTER DATABASE otus OWNER TO otus;
- \q
+
+sudo -u postgres psql  
+CREATE ROLE otus LOGIN PASSWORD '1234567890';  
+CREATE DATABASE otus;  
+ ALTER DATABASE otus OWNER TO otus;  
+ \q  
  
- --После этого нужно добавить для этого пользователя строчку в файл 
- /etc/postgresql/11/main/pg_hba.conf 
- local   all             otus                             md5
+ --После этого нужно добавить для этого пользователя строчку в файл   
+ /etc/postgresql/11/main/pg_hba.conf   
+ local   all             otus                             md5 
  
-sudo systemctl stop postgresql@11-main    
-sudo systemctl start postgresql@11-main 
+sudo systemctl stop postgresql@11-main     
+sudo systemctl start postgresql@11-main  
 
 
 
