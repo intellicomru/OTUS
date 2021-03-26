@@ -206,22 +206,6 @@ update muzik.file_data set ft_all=to_tsvector(concat(performers,' ',name_orig,' 
 CREATE INDEX muzik_file_data_ft_all ON muzik.file_data USING GIN (ft_all);   
 
 
-performers varchar ,
-name_orig varchar,
-album_name varchar,
-author_music varchar, 
-author_text varchar,
-publisher varchar,
-duration varchar,
-public_year varchar,
-genre varchar,
-filename varchar,
-link varchar,
-size int default 0,
-md5 varchar,
-isrc varchar,
-icpn varchar,
-
 ### Секционирование ###
 **Цель :**     
 
