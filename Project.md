@@ -102,7 +102,6 @@ sudo systemctl start postgresql@11-main
 
  **perl вспомогательные модули. просто для удобства**  
    
-
 ```
 sudo -s 
 apt-get install build-essential
@@ -117,12 +116,14 @@ install LWP::UserAgent
 install JSON
 
 ```
+
 #### драйвера для связи перла и базы #### 
 sudo apt-get install libpq-dev
 apt-get install libdbd-pg-perl
 
 
 создаем таблицы
+
 ```
 psql -U otus -d otus
 create schema muzik;
@@ -147,7 +148,6 @@ icpn varchar,
 CONSTRAINT catalog_pkey PRIMARY KEY (id)
 );
 ```
-
 заполняем данными : 
 
 ~~~
@@ -198,6 +198,143 @@ CREATE INDEX muzik_file_data_ft_name_orig ON muzik.file_data USING GIN (ft_name_
 **ISRC**
 CREATE INDEX muzik_file_data_lower_isrc ON muzik.file_data (lower(isrc));  
 
+**ПО всем полям**  
+alter table muzik.file_data add column ft_all tsvector;     
+заполняем данными :     
+update muzik.file_data set ft_all=to_tsvector(concat(performers,' ',name_orig,' ',album_name,' ',author_music,' ',author_text,' ',publisher,' ',genre,' ',isrc,' ',icpn));    
+
+CREATE INDEX muzik_file_data_ft_all ON muzik.file_data USING GIN (ft_all);   
+
+
+performers varchar ,
+name_orig varchar,
+album_name varchar,
+author_music varchar, 
+author_text varchar,
+publisher varchar,
+duration varchar,
+public_year varchar,
+genre varchar,
+filename varchar,
+link varchar,
+size int default 0,
+md5 varchar,
+isrc varchar,
+icpn varchar,
+
+### Секционирование ###
+**Цель :**     
+
+ на входе поступают списки произведений в формате двух колонок   
+
+ Исполнитель ; Название произведения   
+
+необходимо найти и сопоставить их с данными контента  
+
+пример входящего файла :   
+````
+artist;	title
+DJ DimixeR feat. Max Vertigo;	Sambala (Wallmers Remix)
+DJ DimixeR feat. Max Vertigo;	Sambala
+DJ DimixeR feat. Max Vertigo;	Sambala (Club Mix)
+DJ DimixeR feat. Max Vertigo;	Sambala (K 11 remix)
+DJ DimixeR feat. Max Vertigo;	Sambala (Jimmy Jaam Radio Remix)
+DJ DimixeR feat. Max Vertigo;	Sambala (Jimmy Jaam Remix)
+DJ DimixeR feat. Max Vertigo;	Sambala (Menshee Radio Edit)
+DJ DimixeR feat. Max Vertigo;	Sambala (Menshee Remix)
+````
+
+Решение :   
+
+Создаем кеширующую партицированную таблицу :   
+
+create table muzik.performer_title (
+ id int,
+ performer varchar,
+ title varchar,
+ isrc varchar
+ ) partition by hash(performer,title);
+
+
+создаем партиции   
+
+DO
+$$
+declare
+    i   int;
+begin
+FOR i IN 1..100 LOOP
+   execute format('create table muzik.performer_title_%s partition of muzik.performer_title FOR VALUES WITH (MODULUS 100, REMAINDER %s)', i, i-1);
+END loop;
+end;
+$$;
+
+
+
+**Создаем функцию нормализации**  
+
+CREATE OR REPLACE FUNCTION public.normalize_title(t text)
+ RETURNS text
+ LANGUAGE plpgsql
+AS $function$
+ DECLARE
+  res    text;
+ BEGIN
+res=lower(t);
+res=regexp_replace(res, '[\(\)\s\+\-\.\,\"\:\;\\!\§\@\#\$\%\^\&\*\/\\\''\~\`\>\<\[\]]', ' ', 'g');
+res=regexp_replace(res, '\s+', ' ', 'g');
+res=regexp_replace(res, '^\s+|\s+$', '', 'g');
+return res;
+END
+$function$
+;
+
+
+**Создаем триггер чтобы заполнять ее новыми данными после инсерта в основную таблицу** 
+
+CREATE OR REPLACE FUNCTION public._file_data_after_insert()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+   insert into muzik.performer_title (hgc_id,performer,title,isrc) values(NEW.id,public.normalize_title(NEW.performers),public.normalize_title(NEW.name_orig),NEW.isrc);
+    RETURN NEW.id;
+END;
+$function$
+;
+create trigger add_perormer_title_after_insert after
+insert
+    on
+    muzik.file_data for each row execute procedure public._file_data_after_insert();
+
+
+заполняем старыми данными   
+
+insert into  muzik.performer_title (id,performer,title,isrc)
+select id,public.normalize_title(performers),public.normalize_title(name_orig),isrc from muzik.file_data;
+
+
+Пример использования.   
+сначала мы нормализуем, чтобы хеш работал однозначно. 
+
+SELECT public.normalize_title('Antti Ketonen') performer,public.normalize_title('Olisitpa sylissäni') title ;
+
+select pt.id,pt.performer,pt.title,pt.isrc
+from muzik.performer_title pt
+ where pt.performer ='antti ketonen' and pt.title = 'olisitpa sylissäni';
+                hgc_id                |   performer   |       title        |     isrc    
+--------------------------------------+---------------+--------------------+--------------
+ 5f527f1b-0882-6400-0000-12f8fade1e64 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 5ed6db9b-06d6-be00-0000-c78a9555e0ec | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 5f528dd9-007e-d900-0000-ecd77ab8c8b1 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 5f528241-0067-9000-0000-393527063fb1 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 5de7e105-0000-0000-0000-0000dc1c855a | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 5de7da8d-0000-0000-0000-0000d0627638 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 5de66bbb-0000-0000-0000-000007d472e6 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 5ed6dbed-0013-6000-0000-3f19b5c604cd | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 5f525775-0439-1900-0000-d1f1404642a9 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 5de7953b-0000-0000-0000-0000e69b44f6 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+(10 rows)
 
 ### дока ###
 счетчики как ускорить 
