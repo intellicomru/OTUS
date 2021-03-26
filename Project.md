@@ -150,9 +150,9 @@ CONSTRAINT catalog_pkey PRIMARY KEY (id)
 заполняем данными : 
 
 ```
-cat /home/alex/mp3_data_all.csv | psql -h 127.0.0.1 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'  quote '\"' escape '\"' CSV" 
+cat /home/alex/mp3_data_all.csv | psql -h 127.0.0.1 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'   quote E'\b' escape '\"' CSV" 
 
- 
+ quote '\"'
 #### подключаемся к кластеру через промежуточную машину пока  ####
 psql -h 10.154.0.6  -U postgres
 
@@ -166,4 +166,32 @@ CREATE DATABASE otus;
 
 заливаем данные в кластер 
 
-cat /home/alex/mp3_data_all.csv | psql -h 10.154.0.6 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'  quote '\"' escape '\"' CSV" 
+cat /home/alex/mp3_data_all.csv | psql -h 10.154.0.6 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'  CSV" 
+quote '\"' escape '\"' 
+
+
+Строим индексы 
+Реализовать индекс для полнотекстового поиска  
+
+добавляем колонку tsvector для полнотекстового поиска   
+ИПОЛНИТЕЛЬ   
+alter table muzik.file_data add column ft_performers tsvector;    
+заполняем данными :    
+update muzik.file_data set ft_performers=to_tsvector(performers);    
+CREATE INDEX muzik_file_data_performers ON muzik.file_data USING GIN (ft_performers);    
+
+НАЗВАНИЕ  
+alter table muzik.file_data add column ft_name_orig tsvector;     
+заполняем данными :     
+update muzik.file_data set ft_name_orig=to_tsvector(name_orig);    
+CREATE INDEX muzik_file_data_ft_name_orig ON muzik.file_data USING GIN (ft_name_orig);   
+
+
+счетчики 
+## https://habr.com/ru/post/276055/ 
+
+SELECT reltuples::bigint
+FROM pg_catalog.pg_class
+WHERE relname = 'muzik.file_data';
+
+
