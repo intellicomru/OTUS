@@ -189,6 +189,10 @@ alter table muzik.file_data add column ft_name_orig tsvector;
 update muzik.file_data set ft_name_orig=to_tsvector(name_orig);    
 CREATE INDEX muzik_file_data_ft_name_orig ON muzik.file_data USING GIN (ft_name_orig);   
 
+**ISRC**
+CREATE INDEX muzik_file_data_lower_isrc ON muzik.file_data (lower(isrc));  
+
+
 ### дока ###
 счетчики как ускорить 
 ## https://habr.com/ru/post/276055/ 
