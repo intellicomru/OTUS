@@ -232,6 +232,7 @@ icpn varchar,
 необходимо найти и сопоставить их с данными контента  
 
 пример входящего файла :   
+
 ````
 artist;	title
 DJ DimixeR feat. Max Vertigo;	Sambala (Wallmers Remix)
@@ -319,22 +320,35 @@ select id,public.normalize_title(performers),public.normalize_title(name_orig),i
 
 SELECT public.normalize_title('Antti Ketonen') performer,public.normalize_title('Olisitpa sylissäni') title ;
 
-select pt.id,pt.performer,pt.title,pt.isrc
-from muzik.performer_title pt
- where pt.performer ='antti ketonen' and pt.title = 'olisitpa sylissäni';
-                hgc_id                |   performer   |       title        |     isrc    
---------------------------------------+---------------+--------------------+--------------
- 5f527f1b-0882-6400-0000-12f8fade1e64 | antti ketonen | olisitpa sylissäni | FIWMA1700103
- 5ed6db9b-06d6-be00-0000-c78a9555e0ec | antti ketonen | olisitpa sylissäni | FIWMA1700103
- 5f528dd9-007e-d900-0000-ecd77ab8c8b1 | antti ketonen | olisitpa sylissäni | FIWMA1700103
- 5f528241-0067-9000-0000-393527063fb1 | antti ketonen | olisitpa sylissäni | FIWMA1700103
- 5de7e105-0000-0000-0000-0000dc1c855a | antti ketonen | olisitpa sylissäni | FIWMA1700103
- 5de7da8d-0000-0000-0000-0000d0627638 | antti ketonen | olisitpa sylissäni | FIWMA1700103
- 5de66bbb-0000-0000-0000-000007d472e6 | antti ketonen | olisitpa sylissäni | FIWMA1700103
- 5ed6dbed-0013-6000-0000-3f19b5c604cd | antti ketonen | olisitpa sylissäni | FIWMA1700103
- 5f525775-0439-1900-0000-d1f1404642a9 | antti ketonen | olisitpa sylissäni | FIWMA1700103
- 5de7953b-0000-0000-0000-0000e69b44f6 | antti ketonen | olisitpa sylissäni | FIWMA1700103
-(10 rows)
+````
+SELECT public.normalize_title('Antti Ketonen') performer,public.normalize_title('Olisitpa sylissäni') title ;
+   performer   |       title        
+---------------+--------------------
+ antti ketonen | olisitpa sylissäni
+````
+потом запрос к партиционированной таблице   
+
+````
+otus=> select pt.id,pt.performer,pt.title,pt.isrc
+otus-> from muzik.performer_title pt
+otus->  where pt.performer ='antti ketonen' and pt.title = 'olisitpa sylissäni';
+   id    |   performer   |       title        |     isrc     
+---------+---------------+--------------------+--------------
+ 2004549 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 2010720 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 3250550 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 3256760 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 3278935 | antti ketonen | olisitpa sylissäni | FIWMA1800188
+ 5442527 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 6023737 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 7190303 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 8647097 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 8753799 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 8812904 | antti ketonen | olisitpa sylissäni | FIWMA1700103
+ 9072424 | antti ketonen | olisitpa sylissäni | FIWMA1800189
+(12 rows)
+
+````
 
 ### дока ###
 счетчики как ускорить 
