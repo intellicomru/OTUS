@@ -1,6 +1,6 @@
 #### Настраиваем окружение для работы с GKE : ####
 
-# 1. Обновим Debian  
+1. Обновим Debian  
 apt-get -y update  
 apt-get -y upgrade  
 

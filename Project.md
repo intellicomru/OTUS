@@ -155,7 +155,9 @@ cat /home/alex/mp3_data_all.csv | psql -h 127.0.0.1 -p 5432 -U otus -d otus  -c 
 
 ~~~
 
-#### подключаемся к кластеру через промежуточную машину пока  ####
+установка и настройка кластера тут : [тут](https://github.com/intellicomru/OTUS/blob/main/prj-okrujenie.md).
+
+##### подключаемся к кластеру через промежуточную машину пока  #####
 psql -h 10.154.0.6  -U postgres  
 
 CREATE ROLE otus LOGIN PASSWORD '1234567890';  
@@ -165,7 +167,11 @@ CREATE DATABASE otus;
 
 ###### добавляем в кластер доступ для otus на управляющей машине  ###### 
 
- kubectl exec -it $(kubectl get pods -l app.kubernetes.io/component=pgpool,app.kubernetes.io/name=postgresql-ha -o jsonpath='{.items[0].metadata.name}') -- pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "otus" "1234567890"  
+локально фовардим kubectl port-forward --namespace default svc/pgsql-ha-postgresql-ha-pgpool 8888:5432
+
+**строчка для записи доступа в куб.**     
+
+ kubectl exec -it $(kubectl get pods -l app.kubernetes.io/component=pgpool,app.kubernetes.io/name=postgresql-ha -o jsonpath='{.items[0].metadata.name}') -- pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "otus" "1234567890"   
 
 заливаем данные в кластер   
 
