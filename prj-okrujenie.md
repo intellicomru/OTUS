@@ -117,13 +117,13 @@ To connect to your database from outside the cluster execute the following comma
     psql -h 127.0.0.1 -p 5432 -U postgres -d postgres
 
 ```    
-export POSTGRES_PASSWORD=$(kubectl get secret --namespace default pgsql-ha-postgresql-ha-postgresql -o jsonpath="{.data.postgresql-password}" | base64 --decode)
+export POSTGRES_PASSWORD=$(kubectl get secret --namespace default pgsql-ha-postgresql-ha-postgresql -o jsonpath="{.data.postgresql-password}" | base64 --decode)  
 
-root@mgrvkuber:/keys# echo $POSTGRES_PASSWORD
+root@mgrvkuber:/keys# echo $POSTGRES_PASSWORD  
 
-ZH4wv2dw1E
+ZH4wv2dw1E  
 
-локально фовардим 
+локально фовардим   
 kubectl port-forward --namespace default svc/pgsql-ha-postgresql-ha-pgpool 8888:5432
 
 на удаленной машине
@@ -131,17 +131,17 @@ kubectl port-forward --address 0.0.0.0 svc/pgsql-ha-postgresql-ha-pgpool  5432:5
 
 psql -h 10.154.0.6  -U postgres
 
-CREATE ROLE otus LOGIN PASSWORD '1234567890';
-CREATE DATABASE otus;
- ALTER DATABASE otus OWNER TO otus;
- \q
+CREATE ROLE otus LOGIN PASSWORD '1234567890';  
+CREATE DATABASE otus;  
+ ALTER DATABASE otus OWNER TO otus;  
+ \q  
 
-добавляем в кластер доступ для otus 
- kubectl exec -it $(kubectl get pods -l app.kubernetes.io/component=pgpool,app.kubernetes.io/name=postgresql-ha -o jsonpath='{.items[0].metadata.name}') -- pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "otus" "1234567890"
+добавляем в кластер доступ для otus   
+ kubectl exec -it $(kubectl get pods -l app.kubernetes.io/component=pgpool,app.kubernetes.io/name=postgresql-ha -o jsonpath='{.items[0].metadata.name}') -- pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "otus" "1234567890"  
 
-добавляем чтобы конфиг остался после перезагрузки 
+добавляем чтобы конфиг остался после перезагрузки   
 
- cat /etc/environment 
-export KUBECONFIG=/keys/kubeconfig.yaml   
-export GOOGLE_APPLICATION_CREDENTIALS=/keys/gsa-key.json   
+ cat /etc/environment   
+export KUBECONFIG=/keys/kubeconfig.yaml    
+export GOOGLE_APPLICATION_CREDENTIALS=/keys/gsa-key.json    
 
