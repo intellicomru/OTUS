@@ -147,47 +147,50 @@ icpn varchar,
 CONSTRAINT catalog_pkey PRIMARY KEY (id)
 );
 ```
+
 заполняем данными : 
 
-```
+~~~
 cat /home/alex/mp3_data_all.csv | psql -h 127.0.0.1 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'   quote E'\b' escape '\"' CSV" 
 
- quote '\"'
+~~~
+
 #### подключаемся к кластеру через промежуточную машину пока  ####
-psql -h 10.154.0.6  -U postgres
+psql -h 10.154.0.6  -U postgres  
 
-CREATE ROLE otus LOGIN PASSWORD '1234567890';
-CREATE DATABASE otus;
- ALTER DATABASE otus OWNER TO otus;
- \q
+CREATE ROLE otus LOGIN PASSWORD '1234567890';  
+CREATE DATABASE otus;  
+ ALTER DATABASE otus OWNER TO otus;  
+ \q  
 
-добавляем в кластер доступ для otus на управляющей машине 
- kubectl exec -it $(kubectl get pods -l app.kubernetes.io/component=pgpool,app.kubernetes.io/name=postgresql-ha -o jsonpath='{.items[0].metadata.name}') -- pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "otus" "1234567890"
+###### добавляем в кластер доступ для otus на управляющей машине  ###### 
 
-заливаем данные в кластер 
+ kubectl exec -it $(kubectl get pods -l app.kubernetes.io/component=pgpool,app.kubernetes.io/name=postgresql-ha -o jsonpath='{.items[0].metadata.name}') -- pg_md5 -m --config-file="/opt/bitnami/pgpool/conf/pgpool.conf" -u "otus" "1234567890"  
 
-cat /home/alex/mp3_data_all.csv | psql -h 10.154.0.6 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'  CSV" 
-quote '\"' escape '\"' 
+заливаем данные в кластер   
+
+cat /home/alex/mp3_data_all.csv | psql -h 10.154.0.6 -p 5432 -U otus -d otus  -c "COPY muzik.file_data (performers ,name_orig ,album_name ,author_music ,author_text ,publisher,duration ,public_year ,genre ,filename ,link ,size,md5,isrc,icpn) FROM STDIN DELIMITER '~'  CSV"   
 
 
-Строим индексы 
+
+### Строим индексы  ###
 Реализовать индекс для полнотекстового поиска  
-
 добавляем колонку tsvector для полнотекстового поиска   
-ИПОЛНИТЕЛЬ   
+
+**ИCПОЛНИТЕЛЬ**     
 alter table muzik.file_data add column ft_performers tsvector;    
 заполняем данными :    
 update muzik.file_data set ft_performers=to_tsvector(performers);    
 CREATE INDEX muzik_file_data_performers ON muzik.file_data USING GIN (ft_performers);    
 
-НАЗВАНИЕ  
+**НАЗВАНИЕ**    
 alter table muzik.file_data add column ft_name_orig tsvector;     
 заполняем данными :     
 update muzik.file_data set ft_name_orig=to_tsvector(name_orig);    
 CREATE INDEX muzik_file_data_ft_name_orig ON muzik.file_data USING GIN (ft_name_orig);   
 
-
-счетчики 
+### дока ###
+счетчики как ускорить 
 ## https://habr.com/ru/post/276055/ 
 
 SELECT reltuples::bigint
