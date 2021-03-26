@@ -232,17 +232,17 @@ DJ DimixeR feat. Max Vertigo;	Sambala (Menshee Remix)
 Решение :   
 
 Создаем кеширующую партицированную таблицу :   
-
+````
 create table muzik.performer_title (
  id int,
  performer varchar,
  title varchar,
  isrc varchar
  ) partition by hash(performer,title);
-
+````
 
 создаем партиции   
-
+````
 DO
 $$
 declare
@@ -253,11 +253,11 @@ FOR i IN 1..100 LOOP
 END loop;
 end;
 $$;
-
+````
 
 
 **Создаем функцию нормализации**  
-
+````
 CREATE OR REPLACE FUNCTION public.normalize_title(t text)
  RETURNS text
  LANGUAGE plpgsql
@@ -273,10 +273,10 @@ return res;
 END
 $function$
 ;
-
+````
 
 **Создаем триггер чтобы заполнять ее новыми данными после инсерта в основную таблицу** 
-
+````
 CREATE OR REPLACE FUNCTION public._file_data_after_insert()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -291,7 +291,7 @@ create trigger add_perormer_title_after_insert after
 insert
     on
     muzik.file_data for each row execute procedure public._file_data_after_insert();
-
+````
 
 заполняем старыми данными   
 
