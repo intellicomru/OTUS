@@ -195,7 +195,7 @@ CREATE INDEX muzik_file_data_lower_isrc ON muzik.file_data (lower(isrc));
 
 ### дока ###
 счетчики как ускорить 
-## https://habr.com/ru/post/276055/ 
+ https://habr.com/ru/post/276055/   
 
 SELECT reltuples::bigint
 FROM pg_catalog.pg_class
