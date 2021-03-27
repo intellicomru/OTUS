@@ -282,8 +282,8 @@ CREATE OR REPLACE FUNCTION public._file_data_after_insert()
  LANGUAGE plpgsql
 AS $function$
 BEGIN
-   insert into muzik.performer_title (hgc_id,performer,title,isrc) values(NEW.id,public.normalize_title(NEW.performers),public.normalize_title(NEW.name_orig),NEW.isrc);
-    RETURN NEW.id;
+   insert into muzik.performer_title (id,performer,title,isrc) values(NEW.id,public.normalize_title(NEW.performers),public.normalize_title(NEW.name_orig),NEW.isrc);
+    RETURN NEW;
 END;
 $function$
 ;
